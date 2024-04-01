@@ -13,7 +13,7 @@ docs/
 
 # Dotenv file
 .env
-
+evm/env
 # macOS stuff
 .DS_Store
 

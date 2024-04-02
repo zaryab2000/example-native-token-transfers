@@ -22,7 +22,7 @@ import {ITransceiver} from "../../src/interfaces/ITransceiver.sol";
 import "../../src/libraries/TransceiverStructs.sol";
 
 contract PayloadSender {
-
+    uint256 public version = 3;
     address BSC_TOKEN = 0x78a86E1fF1359A7D1eAC4A937Bdb9D4650143d56;
     address NTT_MANAGER_BSC = 0xe13510bd0435a38A40FC5aFB09C86e2C1b05b837;
     address Transceiver_BSC = 0xdd6960dd26896D6e2CD903fAf9bf62fFF2c9563e;
@@ -48,13 +48,16 @@ contract PayloadSender {
      * @notice Send Tokens From BSC to ETHEREUM SEPOLIA
      */
 
-    function sendPushTokensOnly(address _to, uint256 _amount) public{
+    function sendPushTokensOnly(address _to, uint256 _amount) public payable{
         uint16 recipientChain = 10002;
         bytes32 recipient =  bytes32(uint256(uint160(_to)));       
-               
+        IERC20 token = IERC20(BSC_TOKEN);
+
+
+        // Take Tokens from user to PayloadSender Contract
+        token.transferFrom(msg.sender, address(this), _amount);
 
         // Approve the NTT Manager
-        IERC20 token = IERC20(BSC_TOKEN);
         token.approve(NTT_MANAGER_BSC, _amount);
 
         // Use the NTT Manager tranafer function to invoke the transfer

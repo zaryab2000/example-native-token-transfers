@@ -32,6 +32,8 @@ contract TokenTransferCheckBSC is Script {
         INttManager ntt = INttManager(0xe13510bd0435a38A40FC5aFB09C86e2C1b05b837);
 
         address deployer = 0xf6861DA1964BBdFE1f6942387EC967f820850162;
+        address bob = 0x25d168F92E2EB8BfFA6570725DddD547176deab0;
+        address alice = 0x7500A89e0EE75ab7d55787462b16Db0AF4AFe6a0;
         address tokenAddress = ntt.token();
 
         //console.log("DEPLOYER After MINT IS", deployer);
@@ -41,28 +43,53 @@ contract TokenTransferCheckBSC is Script {
         ISpokeToken tokenContract = ISpokeToken(tokenAddress);
 
         //tokenContract.mint(deployer, initialSupply);
-        uint256 balanceOfDeployer = tokenContract.balanceOf(deployer);
 
-        console.log("Initial Balance of USER", balanceOfDeployer);
-        console.log("----------##################################-----------------");
 
         IPayloadSender payloadSender = IPayloadSender(0x9cca7fedB4d52669107f4071B6ec5d08DE5f687C);
 
         uint256 versionData = payloadSender.version();
         console.log("Version is", versionData);
 
+
+        // TESTS
+
+
+        // Transfer tokens from BOB to alice
+        //tokenContract.transfer(alice, 10 ether);
+
+        uint256 balanceOfBob = tokenContract.balanceOf(bob);
+        uint256 balanceOfAlice = tokenContract.balanceOf(alice);
+
+        console.log("Balance of Bob", balanceOfBob);
+        console.log("Balance of Alice", balanceOfAlice);
+
+        console.log("----------##################################-----------------");
+
+        //tokenContract.setMinter(0xf6861DA1964BBdFE1f6942387EC967f820850162);
+        address minterOfBSCToken = tokenContract.minter();
+        console.log("Minter of BSC Token", minterOfBSCToken);
+
         // Check Allowance, Approve Allowance for NTT 
         uint256 gasAmount = 500000000000000000;
-        uint256 amountToBridge = 5 ether;
-        address recipient = 0x7500A89e0EE75ab7d55787462b16Db0AF4AFe6a0;
-        // tokenContract.approve(address(payloadSender), amountToBridge);
-
-        uint256 currentAllowance = tokenContract.allowance(deployer, address(payloadSender));
-        console.log("Initial ALLOWANCE OF NTT MANAGER", currentAllowance);
+        uint256 amountToBridge = 10 ether;
+        address recipient = 0xf6861DA1964BBdFE1f6942387EC967f820850162;
         
-        // BRIDGE PUSH TOKENS 
-       payloadSender.sendPushTokensOnly{ value: gasAmount}(recipient, amountToBridge);
-
+        // Approval Checks 
+        //tokenContract.approve(address(payloadSender), amountToBridge);
+        //uint256 currentAllowance = tokenContract.allowance(alice, address(payloadSender));
+        //console.log("Initial ALLOWANCE OF NTT MANAGER", currentAllowance);
+        
+        // // BRIDGE PUSH TOKENS 
+       // payloadSender.sendPushTokensOnly{ value: gasAmount}(recipient, amountToBridge);
+        
+        // CUSTOM ERROR DEBUGGER 
+        // bytes4 desiredSelector = bytes4(keccak256(bytes("NotEnoughCapacity(uint256,uint256)")));
+        // console.logBytes4(desiredSelector);
         vm.stopBroadcast();
     }
 }
+// NotEnoughCapacity:  failed: custom error 26fb55dd:00000000000000000000000000000000…0000000000000003cb71f51fc5580000 (64 bytes)
+
+
+// Commands to run the script
+// forge script script/Temp/BSCPayloadSender.sol --rpc-url https://data-seed-prebsc-1-s1.bnbchain.org:8545 --private-key --broadcast  -vvv ffi

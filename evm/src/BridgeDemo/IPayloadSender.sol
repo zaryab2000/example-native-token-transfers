@@ -7,6 +7,8 @@ interface IPayloadSender {
     /// @param _amount The amount of tokens to mint.
     function sendPushTokensOnly(address _to, uint256 _amount) external payable;
     function version() external view returns(uint256);
+    function SEPOLIA_TOKEN() external view returns(address);
+
 
 
 }

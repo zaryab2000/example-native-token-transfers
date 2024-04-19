@@ -44,11 +44,6 @@ contract PayloadMessageSender is IWormholeReceiver {
     IWormholeRelayer public wormholeRelayer = IWormholeRelayer(_wormholeRelayerAddressBSC);
     IWormholeRelayer public wormholeRelayerETH = IWormholeRelayer(_wormholeRelayerAddressBSC);
 
-
-    function quoteCrossChainGreeting(uint16 targetChain) public view returns (uint256 cost) {
-        (cost,) = wormholeRelayer.quoteEVMDeliveryPrice(targetChain, 0, GAS_LIMIT);
-    }
-
     function buildTransceiverInstruction(bool relayer_off)
         public
         view
@@ -65,10 +60,14 @@ contract PayloadMessageSender is IWormholeReceiver {
         });
     }
 
+    function quoteCrossChainGreeting(uint16 targetChain) public view returns (uint256 cost) {
+        (cost,) = wormholeRelayer.quoteEVMDeliveryPrice(targetChain, 0, GAS_LIMIT);
+    }
     function sendPushTokenWithMSG(address _to, uint256 _amount, string memory _msg, address targetContractAddress) public payable{
         bytes32 recipient =  bytes32(uint256(uint160(_to)));       
         IERC20 token = IERC20(BSC_TOKEN);
 
+        // BRIDGE the message to the recipient chain
         uint256 cost = quoteCrossChainGreeting(recipientChain);
         require(msg.value >= cost);
         wormholeRelayer.sendPayloadToEvm{value: cost}(
@@ -83,15 +82,12 @@ contract PayloadMessageSender is IWormholeReceiver {
 
         // Take Tokens from user to PayloadSender Contract
         token.transferFrom(msg.sender, address(this), _amount);
-
         // Approve the NTT Manager
         token.approve(NTT_MANAGER_BSC, _amount);
-
         // Use the NTT Manager tranafer function to invoke the transfer
         INttManager ntt = INttManager(NTT_MANAGER_BSC);
         ITransceiver transceiverBSC = ITransceiver(Transceiver_BSC);
         // Get Wormhole Instruction
-       
         // Get the GAS COST
         uint256 totalPriceQuote = transceiverBSC.quoteDeliveryPrice(recipientChain, buildTransceiverInstruction(false));
         ntt.transfer{value:totalPriceQuote}(_amount, recipientChain, recipient);

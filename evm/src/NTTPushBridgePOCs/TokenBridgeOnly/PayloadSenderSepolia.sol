@@ -15,11 +15,11 @@ pragma solidity >=0.8.8 <0.9.0;
 // 2. Function to Bridge Token + Msg From BSC To SEPOLIA
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {INttManager} from "../../src/interfaces/INttManager.sol";
-import {IManagerBase} from "../../src/interfaces/IManagerBase.sol";
-import {IWormholeTransceiver} from "../../src/interfaces/IWormholeTransceiver.sol";
-import {ITransceiver} from "../../src/interfaces/ITransceiver.sol";
-import "../../src/libraries/TransceiverStructs.sol";
+import {INttManager} from "../../../src/interfaces/INttManager.sol";
+import {IManagerBase} from "../../../src/interfaces/IManagerBase.sol";
+import {IWormholeTransceiver} from "../../../src/interfaces/IWormholeTransceiver.sol";
+import {ITransceiver} from "../../../src/interfaces/ITransceiver.sol";
+import "../../../src/libraries/TransceiverStructs.sol";
 
 contract PayloadSenderSepolia {
     uint256 public version = 1;

@@ -6,7 +6,7 @@ import {Script, console} from "forge-std/Script.sol";
 import "../../src/interfaces/Temp/ITempNttManager.sol";
 import "../../src/interfaces/INttManager.sol";
 import "../../src/interfaces/IManagerBase.sol";
-import {ISpokeToken} from "../../src/BridgeDemo/ISpokeToken.sol";
+import {ISpokeToken} from "../../src/NTTPushBridgePOCs/ISpokeToken.sol";
 
 
 contract TokenTransferCheckBSC is Script {

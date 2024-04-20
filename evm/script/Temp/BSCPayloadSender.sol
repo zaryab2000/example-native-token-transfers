@@ -6,8 +6,8 @@ import {Script, console} from "forge-std/Script.sol";
 import "../../src/interfaces/Temp/ITempNttManager.sol";
 import "../../src/interfaces/INttManager.sol";
 import "../../src/interfaces/IManagerBase.sol";
-import {ISpokeToken} from "../../src/BridgeDemo/ISpokeToken.sol";
-import {IPayloadSender} from "../../src/BridgeDemo/IPayloadSender.sol";
+import {ISpokeToken} from "../../src/NTTPushBridgePOCs/ISpokeToken.sol";
+import {IPayloadSender} from "../../src/NTTPushBridgePOCs/IPayloadSender.sol";
 
 
 /**

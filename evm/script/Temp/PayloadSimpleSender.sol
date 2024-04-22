@@ -21,23 +21,23 @@ import {IPayloadSimpleSender} from "../../src/NTTPushBridgePOCs/IPayloadSimpleSe
  * Identify and Document Issues if any
  */
 
-//Payload Deployed to : 0xF860F20fFf807041e214Fa722A877df9c456b6Fa
+//Payload Deployed to : 0x6022e75241826D6b0e1B8c38185e9126F79Eaf2b
 contract TokenTransferCheckBSC is Script {
 
     function run() external {
         vm.startBroadcast();
 
         IPayloadSimpleSender.Channel memory _channelData = IPayloadSimpleSender.Channel(
-                                            "0x054EE1f0723Ce0cEb227ACd13795A3544BDC1710", 
+                                            "0xf6861DA1964BBdFE1f6942387EC967f820850162", 
                                             1, 
-                                            0x054EE1f0723Ce0cEb227ACd13795A3544BDC1710, 
+                                            0x74415Bc4C4Bf4Baecc2DD372426F0a1D016Fa924, 
                                             true, 
-                                            1998, 
+                                            786687, 
                                             0xe5632241);
 
         IManagerBase nttManagerBase = IManagerBase(0xe13510bd0435a38A40FC5aFB09C86e2C1b05b837);
         INttManager ntt = INttManager(0xe13510bd0435a38A40FC5aFB09C86e2C1b05b837);
-        address targetMessageContract = 0x58d3C76eDb3bD99aDfD566299a5a1421f26b9477;
+        address targetMessageContract = 0xF860F20fFf807041e214Fa722A877df9c456b6Fa;
         address deployer = 0xf6861DA1964BBdFE1f6942387EC967f820850162;
         address tokenAddress = ntt.token();
 
@@ -46,7 +46,7 @@ contract TokenTransferCheckBSC is Script {
 
         // Get Toekn Balance of Sender
         ISpokeToken tokenContract = ISpokeToken(tokenAddress);
-        IPayloadSimpleSender payloadSender = IPayloadSimpleSender(0xF860F20fFf807041e214Fa722A877df9c456b6Fa);
+        IPayloadSimpleSender payloadSender = IPayloadSimpleSender(0x6022e75241826D6b0e1B8c38185e9126F79Eaf2b);
 
         // uint256 versionData = payloadSender.version();
         // console.log("Version is", versionData);
@@ -59,17 +59,17 @@ contract TokenTransferCheckBSC is Script {
 
         // // Check Allowance, Approve Allowance for NTT 
         uint256 gasAmount = 100000000000000000;
-        uint256 amountToBridge = 1 ether;
+        uint256 amountToBridge = 2 ether;
         // address recipient = 0x7C1B612e86D688f1A41Fa17DD9f80971bc754696;
         
     //     // Approval Checks 
-    //     tokenContract.approve(address(payloadSender), amountToBridge);
+   //     tokenContract.approve(address(payloadSender), amountToBridge);
     //    uint256 currentAllowance = tokenContract.allowance(deployer, address(payloadSender));
     //    console.log("Initial ALLOWANCE OF NTT MANAGER", currentAllowance);
         
     //     // // BRIDGE PUSH TOKENS 
     //     //payloadSender.sendPushTokensOnly{ value: gasAmount}(recipient, amountToBridge);
-        payloadSender.sendPushTokenWithMSG{ value: gasAmount}(targetMessageContract, amountToBridge, _channelData, targetMessageContract);
+    payloadSender.sendPushTokenWithMSG{ value: gasAmount}(targetMessageContract, amountToBridge, _channelData, targetMessageContract);
 
     //     // CUSTOM ERROR DEBUGGER 
     //     // bytes4 desiredSelector = bytes4(keccak256(bytes("NotEnoughCapacity(uint256,uint256)")));

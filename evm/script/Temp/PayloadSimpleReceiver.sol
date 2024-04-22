@@ -7,7 +7,7 @@ import "../../src/interfaces/Temp/ITempNttManager.sol";
 import "../../src/interfaces/INttManager.sol";
 import "../../src/interfaces/IManagerBase.sol";
 import {ISpokeToken} from "../../src/NTTPushBridgePOCs/ISpokeToken.sol";
-import {IPayloadReceiver} from "../../src/NTTPushBridgePOCs/IPayloadReceiver.sol";
+import {IPayloadSimpleReceiver} from "../../src/NTTPushBridgePOCs/IPayloadSimpleReceiver.sol";
 
 
 /**
@@ -22,7 +22,7 @@ import {IPayloadReceiver} from "../../src/NTTPushBridgePOCs/IPayloadReceiver.sol
  * Identify and Document Issues if any
  */
 
-//Payload Deployed to : 0x7C1B612e86D688f1A41Fa17DD9f80971bc754696
+//Payload Deployed to : 0x301D8e51F2e2aA518960D9909d7656F32F2e0e0E
 contract TokenTransferCheckBSC is Script {
     function run() external {
         vm.startBroadcast();
@@ -34,20 +34,16 @@ contract TokenTransferCheckBSC is Script {
         address deployer = 0xf6861DA1964BBdFE1f6942387EC967f820850162;
 
 
-        IPayloadReceiver payloadSender = IPayloadReceiver(0x7C1B612e86D688f1A41Fa17DD9f80971bc754696);
+        IPayloadSimpleReceiver payloadSender = IPayloadSimpleReceiver(0x301D8e51F2e2aA518960D9909d7656F32F2e0e0E);
 
         uint256 versionData = payloadSender.version();
         console.log("Version is", versionData);
 
-        uint256 magicValue = payloadSender.magicValue();
-        console.log("Magic Value is", magicValue);
-        
-        address lastCaller = payloadSender.lastCaller();
-        console.log("Last Caller is", lastCaller);
+        uint256 recipientChainData = payloadSender.recipientChain();
+        console.log("Recipient Chain is", recipientChainData);
 
-        string memory lastCallerAddressInStringFormat = payloadSender.lastCallerAddressInStringFormat();
-        console.log("Last Caller Address in String Format is", lastCallerAddressInStringFormat);
-
+        string memory latestGreetingData = payloadSender.latestGreeting();
+        console.log("Latest Greeting is", latestGreetingData);
         
 
     }

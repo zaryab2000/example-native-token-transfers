@@ -24,12 +24,27 @@ import "../../src/../libraries/TransceiverStructs.sol";
 
 import "wormhole-solidity-sdk/interfaces/IWormholeRelayer.sol";
 import "wormhole-solidity-sdk/interfaces/IWormholeReceiver.sol";
+import "../IPayloadSimpleSender.sol";
 
-contract PayloadMessageSender is IWormholeReceiver {
-    uint256 public version = 2;
+
+contract PayloadMessageReceiver is IWormholeReceiver {
+    uint256 public version = 1011;
+
+    uint256 constant GAS_LIMIT = 500_000;
 
     uint16 public recipientChain = 10002;
 
+    address public lastCaller;
+    uint256 public magicValue;
+
+    string public lastCallerAddressInStringFormat;
+    mapping(address => IPayloadSimpleSender.Channel) public channels;
+
+    address BSC_TOKEN = 0x78a86E1fF1359A7D1eAC4A937Bdb9D4650143d56;
+    address NTT_MANAGER_BSC = 0xe13510bd0435a38A40FC5aFB09C86e2C1b05b837;
+    address Transceiver_BSC = 0xdd6960dd26896D6e2CD903fAf9bf62fFF2c9563e;
+    address adminDeployer = 0xf6861DA1964BBdFE1f6942387EC967f820850162;
+    
     // Message Sending Preparation
     address public _wormholeRelayerAddressBSC = 0x80aC94316391752A193C1c47E27D382b507c93F3;
     address public _wormholeRelayerAddressETH = 0x7B1bD7a6b4E61c2a123AC6BC2cbfC614437D0470;
@@ -37,20 +52,7 @@ contract PayloadMessageSender is IWormholeReceiver {
     IWormholeRelayer public wormholeRelayer = IWormholeRelayer(_wormholeRelayerAddressBSC);
     IWormholeRelayer public wormholeRelayerETH = IWormholeRelayer(_wormholeRelayerAddressBSC);
 
-    struct Channel {
-        string callerAddress;
-        uint8 channelState;
-        address verifiedBy;
-        bool isVerified;
-        uint256 magicValData;
-        bytes4 functionSignature;
-    }
-    address public lastCaller;
-    uint256 public magicValue;
-
-    string public lastCallerAddressInStringFormat;
-    mapping(address => Channel) public channels;
-
+    event BridgedMessageReceived(address indexed sender, uint256 indexed magicValue, bytes4 functionSig, bool isVerified);
 
     function receiveWormholeMessages(
         bytes memory payload,
@@ -62,23 +64,21 @@ contract PayloadMessageSender is IWormholeReceiver {
         require(msg.sender == address(_wormholeRelayerAddressETH), "Only relayer allowed");
 
         // Decode the payload
-        (Channel memory decodedChannel, address sender) = abi.decode(payload, (Channel, address));
+        (IPayloadSimpleSender.Channel memory decodedChannel, address sender) = abi.decode(payload, (IPayloadSimpleSender.Channel, address));
         lastCaller = sender;
         lastCallerAddressInStringFormat = decodedChannel.callerAddress;
 
         // Store the channel
         channels[sender] = decodedChannel;
-        
-        // Execute function selector
+
+         // Execute function selector
         if(decodedChannel.functionSignature != bytes4(0)) {
             (bool success, ) = address(this).call(abi.encodeWithSelector(decodedChannel.functionSignature, decodedChannel.magicValData));
             require(success, "Internal Function Execution failed");
-
         }
-    }
+        emit BridgedMessageReceived(sender, decodedChannel.magicValData, decodedChannel.functionSignature, decodedChannel.isVerified);
+        
 
-    function getChannelData(address _channelOwner) public view returns(Channel memory) {
-        return channels[_channelOwner];
     }
 
     function setMagicValue(uint256 _magicVal) public {

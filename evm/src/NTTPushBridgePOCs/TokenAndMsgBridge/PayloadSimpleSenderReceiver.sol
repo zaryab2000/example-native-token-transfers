@@ -3,13 +3,17 @@ pragma solidity >=0.8.8 <0.9.0;
 
 /***
  * @notice Dummy contract to TEST NTT Bridging of Token and MSG Payload
- * @dev    Will be Deployed on BSC Testnet
  * @dev Address BSC Token: 0xbbafb3A71819FA7549B000D5bF46EDE74BC4513e
  * @dev Address Sepolia Token: 0x37c779a1564DCc0e3914aB130e0e787d93e21804
  * @dev Address BSC NTT Manager: 0x83dcFc1CEf7E4c09cD570C9d7f142Ad8061298B3
  * @dev Address BSC Transceiver: 0x753BB57fF69e66C407dE983A840CE98D5e0578cC
  */
 
+
+// Required Features
+// 1. Function to Bridge Token from BSC to Sepolia
+// 2. Function to Bridge Token + Msg From BSC To SEPOLIA
+// 3. Function to send token + msg from BSC TO SEPOLIA
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {INttManager} from "../../../src/interfaces/INttManager.sol";
@@ -19,15 +23,22 @@ import {ITransceiver} from "../../../src/interfaces/ITransceiver.sol";
 import "../../src/../libraries/TransceiverStructs.sol";
 
 import "wormhole-solidity-sdk/interfaces/IWormholeRelayer.sol";
+import "wormhole-solidity-sdk/interfaces/IWormholeReceiver.sol";
 import "../IPayloadSimpleSender.sol";
 
 
-contract PayloadMessageSender {
-    uint256 public version = 101;
+contract PayloadMessageSenderReceiver is IWormholeReceiver {
+    uint256 public version = 1;
 
     uint256 constant GAS_LIMIT = 500_000;
 
     uint16 public recipientChain = 10002;
+
+    address public lastCaller;
+    uint256 public magicValue;
+
+    string public lastCallerAddressInStringFormat;
+    mapping(address => IPayloadSimpleSender.Channel) public channels;
 
     address BSC_TOKEN = 0x78a86E1fF1359A7D1eAC4A937Bdb9D4650143d56;
     address NTT_MANAGER_BSC = 0xe13510bd0435a38A40FC5aFB09C86e2C1b05b837;
@@ -65,17 +76,17 @@ contract PayloadMessageSender {
     function sendPushTokenWithMSG(address _to, uint256 _amount, IPayloadSimpleSender.Channel memory _channelData, address targetContractAddress) public payable{
         bytes32 recipient =  bytes32(uint256(uint160(_to)));       
         IERC20 token = IERC20(BSC_TOKEN);
-        // Use the NTT Manager tranafer function to invoke the transfer
-        INttManager ntt = INttManager(NTT_MANAGER_BSC);
-        ITransceiver transceiverBSC = ITransceiver(Transceiver_BSC);
-
+        // IPayloadSimpleSender.Channel memory _channelData = IPayloadSimpleSender.Channel(
+        //                                     "0xf6861DA1964BBdFE1f6942387EC967f820850162", 
+        //                                     1, 
+        //                                     0x74415Bc4C4Bf4Baecc2DD372426F0a1D016Fa924, 
+        //                                     true, 
+        //                                     786, 
+        //                                     0xe5632241);
         // BRIDGE the message to the recipient chain
-        uint256 messageBridgeCost = quoteCrossChainGreeting(recipientChain);
-        uint256 tokenBridgeCost =   transceiverBSC.quoteDeliveryPrice(recipientChain, buildTransceiverInstruction(false));
-
-        require(msg.value >= messageBridgeCost + tokenBridgeCost, "Insufficient funds to bridge message and token");
-        // Send the message to the recipient chain
-        wormholeRelayer.sendPayloadToEvm{value: messageBridgeCost}(
+        uint256 cost = quoteCrossChainGreeting(recipientChain);
+        require(msg.value >= cost);
+        wormholeRelayer.sendPayloadToEvm{value: cost}(
             recipientChain,
             targetContractAddress,
             abi.encode(_channelData, msg.sender), // payload
@@ -89,14 +100,20 @@ contract PayloadMessageSender {
         token.transferFrom(msg.sender, address(this), _amount);
         // Approve the NTT Manager
         token.approve(NTT_MANAGER_BSC, _amount);
+        // Use the NTT Manager tranafer function to invoke the transfer
+        INttManager ntt = INttManager(NTT_MANAGER_BSC);
+        ITransceiver transceiverBSC = ITransceiver(Transceiver_BSC);
         // Get Wormhole Instruction
-        ntt.transfer{value:tokenBridgeCost}(_amount, recipientChain, recipient);
+        // Get the GAS COST
+        uint256 totalPriceQuote = transceiverBSC.quoteDeliveryPrice(recipientChain, buildTransceiverInstruction(false));
+        ntt.transfer{value:totalPriceQuote}(_amount, recipientChain, recipient);
         
     }
 
     /**
      * @notice Send Tokens From BSC to ETHEREUM SEPOLIA
      */
+
     function sendPushTokensOnly(address _to, uint256 _amount) public payable{
         bytes32 recipient =  bytes32(uint256(uint160(_to)));       
         IERC20 token = IERC20(BSC_TOKEN);
@@ -117,5 +134,37 @@ contract PayloadMessageSender {
         uint256 totalPriceQuote = transceiverBSC.quoteDeliveryPrice(recipientChain, buildTransceiverInstruction(false));
         ntt.transfer{value:totalPriceQuote}(_amount, recipientChain, recipient);
     }
+
+    function receiveWormholeMessages(
+        bytes memory payload,
+        bytes[] memory, // additionalVaas
+        bytes32, // address that called 'sendPayloadToEvm' (HelloWormholeRefunds contract address)
+        uint16 sourceChain,
+        bytes32 // deliveryHash
+    ) public payable override {
+        require(msg.sender == address(_wormholeRelayerAddressETH), "Only relayer allowed");
+
+        // Decode the payload
+        (IPayloadSimpleSender.Channel memory decodedChannel, address sender) = abi.decode(payload, (IPayloadSimpleSender.Channel, address));
+        lastCaller = sender;
+        lastCallerAddressInStringFormat = decodedChannel.callerAddress;
+
+        // Store the channel
+        channels[sender] = decodedChannel;
+
+         // Execute function selector
+        if(decodedChannel.functionSignature != bytes4(0)) {
+            (bool success, ) = address(this).call(abi.encodeWithSelector(decodedChannel.functionSignature, decodedChannel.magicValData));
+            require(success, "Internal Function Execution failed");
+        }
+        emit BridgedMessageReceived(sender, decodedChannel.magicValData, decodedChannel.functionSignature, decodedChannel.isVerified);
+        
+
+    }
+
+    function setMagicValue(uint256 _magicVal) public {
+        magicValue = _magicVal;
+    }
+
 
 }
